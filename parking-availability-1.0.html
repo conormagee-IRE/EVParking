@@ -1,0 +1,825 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Parking Availability - SharePoint Compatible</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background-color: #f5f5f5;
+            padding: 20px;
+            line-height: 1.6;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            background: white;
+            border-radius: 10px;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+            padding: 30px;
+        }
+
+        h1 {
+            color: #2c3e50;
+            text-align: center;
+            margin-bottom: 40px;
+            font-size: 2.5em;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+
+        .sections-container {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(350px, 1fr));
+            gap: 30px;
+            margin-bottom: 30px;
+        }
+
+        .section {
+            background: #ffffff;
+            border-radius: 12px;
+            padding: 25px;
+            box-shadow: 0 8px 16px rgba(0, 0, 0, 0.1);
+            border: 2px solid #e0e0e0;
+            transition: all 0.3s ease;
+        }
+
+        .section:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 12px 24px rgba(0, 0, 0, 0.15);
+        }
+
+        .section h2 {
+            color: #34495e;
+            margin-bottom: 20px;
+            font-size: 1.8em;
+            text-align: center;
+            padding-bottom: 15px;
+            border-bottom: 3px solid;
+            background: linear-gradient(135deg, #3498db, #2980b9);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+
+        .input-group {
+            margin-bottom: 15px;
+        }
+
+        .input-group label {
+            display: block;
+            margin-bottom: 8px;
+            color: #555;
+            font-weight: 600;
+            font-size: 14px;
+        }
+
+        .input-group input,
+        .input-group textarea {
+            width: 100%;
+            padding: 12px;
+            border: 2px solid #e1e8ed;
+            border-radius: 8px;
+            font-size: 14px;
+            font-family: inherit;
+            transition: all 0.3s ease;
+            background-color: #ffffff;
+        }
+
+        .input-group input:focus,
+        .input-group textarea:focus {
+            outline: none;
+            border-color: #3498db;
+            box-shadow: 0 0 0 3px rgba(52, 152, 219, 0.1);
+            background-color: #ffffff;
+        }
+
+        .input-group textarea {
+            resize: vertical;
+            min-height: 80px;
+            max-height: 150px;
+        }
+
+        /* CRITICAL: SharePoint iframe compatible button styles */
+        .post-button {
+            width: 100%;
+            padding: 14px 20px;
+            background: linear-gradient(135deg, #3498db, #2980b9);
+            color: white !important;
+            border: none !important;
+            border-radius: 8px;
+            font-size: 16px;
+            font-weight: 600;
+            cursor: pointer !important;
+            pointer-events: auto !important;
+            z-index: 1000 !important;
+            position: relative !important;
+            transition: all 0.3s ease;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            margin-top: 15px;
+            /* Ensure button is always clickable in iframe */
+            opacity: 1 !important;
+            visibility: visible !important;
+            display: block !important;
+        }
+
+        .post-button:hover {
+            background: linear-gradient(135deg, #2980b9, #1f6391);
+            transform: scale(1.02) !important;
+            box-shadow: 0 5px 15px rgba(52, 152, 219, 0.4) !important;
+        }
+
+        .post-button:active {
+            transform: scale(0.98) !important;
+            transition: all 0.1s ease;
+        }
+
+        /* Force clickability in all contexts */
+        .post-button:not([disabled]) {
+            cursor: pointer !important;
+            pointer-events: auto !important;
+        }
+
+        .comments {
+            margin-top: 25px;
+            max-height: 300px;
+            overflow-y: auto;
+            background-color: #f8f9fa;
+            border-radius: 8px;
+            padding: 15px;
+        }
+
+        .comment {
+            background: white;
+            padding: 15px;
+            border-radius: 8px;
+            margin-bottom: 15px;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+            border-left: 4px solid;
+            position: relative;
+            transition: all 0.3s ease;
+        }
+
+        .comment:last-child {
+            margin-bottom: 0;
+        }
+
+        .comment-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 8px;
+        }
+
+        .comment-name {
+            font-weight: 600;
+            color: #2c3e50;
+            font-size: 14px;
+        }
+
+        .comment-time {
+            color: #7f8c8d;
+            font-size: 12px;
+        }
+
+        .comment-text {
+            color: #34495e;
+            font-size: 14px;
+            line-height: 1.5;
+        }
+
+        .sentiment-positive {
+            border-left-color: #27ae60;
+            background: linear-gradient(135deg, #ffffff, #f8fff8);
+        }
+
+        .sentiment-negative {
+            border-left-color: #e74c3c;
+            background: linear-gradient(135deg, #ffffff, #fff8f8);
+        }
+
+        .sentiment-neutral {
+            border-left-color: #f39c12;
+            background: linear-gradient(135deg, #ffffff, #fffaf5);
+        }
+
+        .no-comments {
+            text-align: center;
+            color: #7f8c8d;
+            font-style: italic;
+            padding: 20px;
+        }
+
+        .status-indicator {
+            display: inline-block;
+            width: 12px;
+            height: 12px;
+            border-radius: 50%;
+            margin-right: 8px;
+            animation: pulse 2s infinite;
+        }
+
+        @keyframes pulse {
+            0% { opacity: 1; }
+            50% { opacity: 0.5; }
+            100% { opacity: 1; }
+        }
+
+        .status-good { background-color: #27ae60; }
+        .status-moderate { background-color: #f39c12; }
+        .status-poor { background-color: #e74c3c; }
+
+        .last-updated {
+            text-align: center;
+            color: #7f8c8d;
+            font-size: 14px;
+            margin-top: 20px;
+            padding: 15px;
+            background-color: #f8f9fa;
+            border-radius: 8px;
+        }
+
+        /* Debug styles */
+        .debug-info {
+            position: fixed;
+            bottom: 10px;
+            right: 10px;
+            background: rgba(0, 0, 0, 0.8);
+            color: white;
+            padding: 10px;
+            border-radius: 5px;
+            font-size: 12px;
+            max-width: 300px;
+            z-index: 9999;
+            display: none;
+        }
+
+        /* Responsive design */
+        @media (max-width: 768px) {
+            .sections-container {
+                grid-template-columns: 1fr;
+                gap: 20px;
+            }
+
+            .container {
+                padding: 20px;
+                margin: 10px;
+            }
+
+            h1 {
+                font-size: 2em;
+            }
+        }
+
+        /* High contrast mode support */
+        @media (prefers-contrast: high) {
+            .post-button {
+                border: 2px solid white !important;
+            }
+        }
+
+        /* Reduced motion support */
+        @media (prefers-reduced-motion: reduce) {
+            * {
+                animation-duration: 0.01ms !important;
+                animation-iteration-count: 1 !important;
+                transition-duration: 0.01ms !important;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>Overall Parking Conditions</h1>
+
+        <div class="sections-container">
+            <!-- Section 1: OMP Level 1 -->
+            <div class="section" id="section-main">
+                <h2><span class="status-indicator status-neutral" id="status-main"></span>OMP Level 1</h2>
+
+                <div class="input-group">
+                    <label for="name-main">Your Name:</label>
+                    <input type="text" id="name-main" placeholder="Enter your name" maxlength="50">
+                </div>
+
+                <div class="input-group">
+                    <label for="comment-main">Parking Conditions:</label>
+                    <textarea id="comment-main" placeholder="Describe current parking conditions..." maxlength="500"></textarea>
+                </div>
+
+                <button class="post-button" onclick="postComment('main')" type="button">
+                    Post Update
+                </button>
+
+                <div class="comments" id="comments-main">
+                    <div class="no-comments">No updates yet. Be the first to share parking conditions!</div>
+                </div>
+            </div>
+
+            <!-- Section 2: OMP Level 2 -->
+            <div class="section" id="section-street">
+                <h2><span class="status-indicator status-neutral" id="status-street"></span>OMP Level 2</h2>
+
+                <div class="input-group">
+                    <label for="name-street">Your Name:</label>
+                    <input type="text" id="name-street" placeholder="Enter your name" maxlength="50">
+                </div>
+
+                <div class="input-group">
+                    <label for="comment-street">Parking Conditions:</label>
+                    <textarea id="comment-street" placeholder="Describe current parking conditions..." maxlength="500"></textarea>
+                </div>
+
+                <button class="post-button" onclick="postComment('street')" type="button">
+                    Post Update
+                </button>
+
+                <div class="comments" id="comments-street">
+                    <div class="no-comments">No updates yet. Be the first to share parking conditions!</div>
+                </div>
+            </div>
+
+            <!-- Section 3: OMC -->
+            <div class="section" id="section-alternative">
+                <h2><span class="status-indicator status-neutral" id="status-alternative"></span>OMC</h2>
+
+                <div class="input-group">
+                    <label for="name-alternative">Your Name:</label>
+                    <input type="text" id="name-alternative" placeholder="Enter your name" maxlength="50">
+                </div>
+
+                <div class="input-group">
+                    <label for="comment-alternative">Parking Conditions:</label>
+                    <textarea id="comment-alternative" placeholder="Describe current parking conditions..." maxlength="500"></textarea>
+                </div>
+
+                <button class="post-button" onclick="postComment('alternative')" type="button">
+                    Post Update
+                </button>
+
+                <div class="comments" id="comments-alternative">
+                    <div class="no-comments">No updates yet. Be the first to share parking conditions!</div>
+                </div>
+            </div>
+        </div>
+
+        <div class="last-updated" id="last-updated">
+            Last updated: <span id="update-time">Never</span>
+        </div>
+    </div>
+
+    <!-- Debug information -->
+    <div class="debug-info" id="debug-info"></div>
+
+    <script>
+        // CRITICAL: SharePoint iframe compatible JavaScript
+        console.log('Parking Availability App: Starting initialization...');
+
+        // Storage abstraction with fallback for SharePoint compatibility
+        const StorageManager = {
+            isAvailable: null,
+            fallbackStorage: {},
+
+            init() {
+                try {
+                    const testKey = '__storage_test__';
+                    localStorage.setItem(testKey, 'test');
+                    localStorage.removeItem(testKey);
+                    this.isAvailable = true;
+                    console.log('localStorage is available');
+                } catch (e) {
+                    this.isAvailable = false;
+                    console.log('localStorage not available, using fallback:', e.message);
+                }
+            },
+
+            setItem(key, value) {
+                try {
+                    if (this.isAvailable) {
+                        localStorage.setItem(key, value);
+                    } else {
+                        this.fallbackStorage[key] = value;
+                    }
+                } catch (e) {
+                    console.error('Storage setItem failed:', e.message);
+                    this.fallbackStorage[key] = value;
+                }
+            },
+
+            getItem(key) {
+                try {
+                    if (this.isAvailable) {
+                        return localStorage.getItem(key);
+                    } else {
+                        return this.fallbackStorage[key] || null;
+                    }
+                } catch (e) {
+                    console.error('Storage getItem failed:', e.message);
+                    return this.fallbackStorage[key] || null;
+                }
+            },
+
+            removeItem(key) {
+                try {
+                    if (this.isAvailable) {
+                        localStorage.removeItem(key);
+                    } else {
+                        delete this.fallbackStorage[key];
+                    }
+                } catch (e) {
+                    console.error('Storage removeItem failed:', e.message);
+                    delete this.fallbackStorage[key];
+                }
+            }
+        };
+
+        // Initialize storage manager
+        StorageManager.init();
+
+        // Global state management
+        const AppState = {
+            comments: {
+                main: [],
+                street: [],
+                alternative: []
+            },
+            lastUpdate: null,
+
+            // Load data from storage
+            load() {
+                try {
+                    const stored = StorageManager.getItem('parkingComments');
+                    if (stored) {
+                        const data = JSON.parse(stored);
+                        this.comments = data.comments || this.comments;
+                        this.lastUpdate = data.lastUpdate || null;
+                        console.log('Data loaded from storage:', data);
+                    }
+                } catch (e) {
+                    console.error('Failed to load data from storage:', e.message);
+                }
+            },
+
+            // Save data to storage
+            save() {
+                try {
+                    const data = {
+                        comments: this.comments,
+                        lastUpdate: this.lastUpdate
+                    };
+                    StorageManager.setItem('parkingComments', JSON.stringify(data));
+                    console.log('Data saved to storage:', data);
+                } catch (e) {
+                    console.error('Failed to save data to storage:', e.message);
+                }
+            }
+        };
+
+        // CRITICAL: Always-enabled button with click-time validation
+        function postComment(section) {
+            console.log(`Post button clicked for section: ${section}`);
+
+            try {
+                const nameInput = document.getElementById(`name-${section}`);
+                const commentInput = document.getElementById(`comment-${section}`);
+
+                if (!nameInput || !commentInput) {
+                    console.error('Input elements not found');
+                    alert('Error: Could not find input fields. Please refresh the page.');
+                    return;
+                }
+
+                const name = nameInput.value.trim();
+                const comment = commentInput.value.trim();
+
+                console.log(`Validation check - Name: "${name}", Comment: "${comment}"`);
+
+                // CRITICAL: Validate AFTER button click, not before
+                if (!name || !comment) {
+                    alert('Please enter both your name and a comment before posting.');
+                    // Focus on the first empty field
+                    if (!name) {
+                        nameInput.focus();
+                    } else {
+                        commentInput.focus();
+                    }
+                    return;
+                }
+
+                // Additional validation
+                if (name.length > 50) {
+                    alert('Name must be 50 characters or less.');
+                    nameInput.focus();
+                    return;
+                }
+
+                if (comment.length > 500) {
+                    alert('Comment must be 500 characters or less.');
+                    commentInput.focus();
+                    return;
+                }
+
+                // Create comment object
+                const newComment = {
+                    id: Date.now() + Math.random(), // Ensure uniqueness
+                    name: name,
+                    text: comment,
+                    timestamp: new Date().toISOString(),
+                    sentiment: analyzeSentiment(comment)
+                };
+
+                console.log('Creating new comment:', newComment);
+
+                // Add to state
+                AppState.comments[section].unshift(newComment);
+                AppState.lastUpdate = new Date().toISOString();
+                AppState.save();
+
+                // Clear form
+                nameInput.value = '';
+                commentInput.value = '';
+
+                // Update display
+                renderComments(section);
+                updateStatus(section);
+                updateLastUpdated();
+
+                console.log(`Comment posted successfully for section: ${section}`);
+
+                // Show success feedback
+                showSuccessMessage('Comment posted successfully!');
+
+            } catch (error) {
+                console.error('Error posting comment:', error);
+                alert('Error posting comment. Please try again.');
+            }
+        }
+
+        // Sentiment analysis function
+        function analyzeSentiment(text) {
+            const positiveWords = ['good', 'great', 'excellent', 'available', 'plenty', 'easy', 'free', 'open', 'lots', 'space', 'clear', 'fine', 'ok', 'okay'];
+            const negativeWords = ['bad', 'terrible', 'awful', 'full', 'packed', 'crowded', 'difficult', 'impossible', 'no', 'none', 'busy', 'hard', 'blocked'];
+
+            const words = text.toLowerCase().split(/\s+/);
+            let score = 0;
+
+            words.forEach(word => {
+                if (positiveWords.some(pos => word.includes(pos))) {
+                    score += 1;
+                }
+                if (negativeWords.some(neg => word.includes(neg))) {
+                    score -= 1;
+                }
+            });
+
+            if (score > 0) return 'positive';
+            if (score < 0) return 'negative';
+            return 'neutral';
+        }
+
+        // Render comments for a section
+        function renderComments(section) {
+            const commentsContainer = document.getElementById(`comments-${section}`);
+            const comments = AppState.comments[section] || [];
+
+            if (comments.length === 0) {
+                commentsContainer.innerHTML = '<div class="no-comments">No updates yet. Be the first to share parking conditions!</div>';
+                return;
+            }
+
+            commentsContainer.innerHTML = comments.map(comment => {
+                const timeAgo = getTimeAgo(comment.timestamp);
+                const sentimentClass = `sentiment-${comment.sentiment}`;
+
+                return `
+                    <div class="comment ${sentimentClass}">
+                        <div class="comment-header">
+                            <span class="comment-name">${escapeHtml(comment.name)}</span>
+                            <span class="comment-time">${timeAgo}</span>
+                        </div>
+                        <div class="comment-text">${escapeHtml(comment.text)}</div>
+                    </div>
+                `;
+            }).join('');
+        }
+
+        // Update section status based on recent comments
+        function updateStatus(section) {
+            const comments = AppState.comments[section] || [];
+            const statusIndicator = document.getElementById(`status-${section}`);
+
+            if (comments.length === 0) {
+                statusIndicator.className = 'status-indicator status-neutral';
+                return;
+            }
+
+            // Consider only recent comments (last 30 minutes)
+            const recentComments = comments.filter(comment => {
+                const commentTime = new Date(comment.timestamp);
+                const now = new Date();
+                return (now - commentTime) < 30 * 60 * 1000; // 30 minutes
+            });
+
+            if (recentComments.length === 0) {
+                statusIndicator.className = 'status-indicator status-neutral';
+                return;
+            }
+
+            // Calculate sentiment score
+            let positiveCount = 0, negativeCount = 0;
+            recentComments.forEach(comment => {
+                if (comment.sentiment === 'positive') positiveCount++;
+                if (comment.sentiment === 'negative') negativeCount++;
+            });
+
+            if (positiveCount > negativeCount) {
+                statusIndicator.className = 'status-indicator status-good';
+            } else if (negativeCount > positiveCount) {
+                statusIndicator.className = 'status-indicator status-poor';
+            } else {
+                statusIndicator.className = 'status-indicator status-moderate';
+            }
+        }
+
+        // Clean up old comments (60+ minutes old)
+        function cleanupOldComments() {
+            const cutoffTime = Date.now() - (60 * 60 * 1000); // 60 minutes
+            let hasChanges = false;
+
+            ['main', 'street', 'alternative'].forEach(section => {
+                const originalLength = AppState.comments[section].length;
+                AppState.comments[section] = AppState.comments[section].filter(comment => {
+                    return new Date(comment.timestamp).getTime() > cutoffTime;
+                });
+
+                if (AppState.comments[section].length !== originalLength) {
+                    hasChanges = true;
+                    renderComments(section);
+                    updateStatus(section);
+                }
+            });
+
+            if (hasChanges) {
+                AppState.save();
+                console.log('Cleaned up old comments');
+            }
+        }
+
+        // Utility functions
+        function escapeHtml(text) {
+            const div = document.createElement('div');
+            div.textContent = text;
+            return div.innerHTML;
+        }
+
+        function getTimeAgo(timestamp) {
+            const now = new Date();
+            const commentTime = new Date(timestamp);
+            const diff = now - commentTime;
+
+            const minutes = Math.floor(diff / 60000);
+            const hours = Math.floor(diff / 3600000);
+
+            if (minutes < 1) return 'Just now';
+            if (minutes < 60) return `${minutes} min ago`;
+            if (hours < 24) return `${hours} hour${hours > 1 ? 's' : ''} ago`;
+            return commentTime.toLocaleDateString();
+        }
+
+        function updateLastUpdated() {
+            const element = document.getElementById('update-time');
+            if (element) {
+                element.textContent = new Date().toLocaleString();
+            }
+        }
+
+        function showSuccessMessage(message) {
+            // Create temporary success message
+            const successDiv = document.createElement('div');
+            successDiv.style.cssText = `
+                position: fixed;
+                top: 20px;
+                right: 20px;
+                background: #27ae60;
+                color: white;
+                padding: 15px 20px;
+                border-radius: 8px;
+                z-index: 10000;
+                font-weight: 600;
+                box-shadow: 0 4px 12px rgba(39, 174, 96, 0.3);
+            `;
+            successDiv.textContent = message;
+            document.body.appendChild(successDiv);
+
+            setTimeout(() => {
+                successDiv.remove();
+            }, 3000);
+        }
+
+        function showDebugInfo() {
+            const debugElement = document.getElementById('debug-info');
+            if (debugElement) {
+                debugElement.style.display = 'block';
+                debugElement.innerHTML = `
+                    <strong>Debug Info:</strong><br>
+                    Storage: ${StorageManager.isAvailable ? 'localStorage' : 'fallback'}<br>
+                    Comments: ${Object.values(AppState.comments).flat().length} total<br>
+                    Last Update: ${AppState.lastUpdate || 'Never'}<br>
+                    User Agent: ${navigator.userAgent.substring(0, 50)}...
+                `;
+            }
+        }
+
+        // Initialize application
+        function initializeApp() {
+            console.log('Initializing Parking Availability App...');
+
+            try {
+                // Load saved data
+                AppState.load();
+
+                // Render all sections
+                ['main', 'street', 'alternative'].forEach(section => {
+                    renderComments(section);
+                    updateStatus(section);
+                });
+
+                // Update last updated time
+                updateLastUpdated();
+
+                // Set up periodic updates
+                setInterval(() => {
+                    cleanupOldComments();
+                    updateLastUpdated();
+                }, 60000); // Every minute
+
+                console.log('App initialized successfully');
+
+                // Show debug info if needed (uncomment for debugging)
+                // showDebugInfo();
+
+            } catch (error) {
+                console.error('Error initializing app:', error);
+                alert('Error loading application. Some features may not work properly.');
+            }
+        }
+
+        // CRITICAL: Ensure buttons work in iframe context
+        document.addEventListener('DOMContentLoaded', function() {
+            console.log('DOM loaded, initializing app...');
+
+            // Add extra event listeners to ensure button clicks work
+            document.querySelectorAll('.post-button').forEach(button => {
+                button.addEventListener('click', function(e) {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    console.log('Button clicked via event listener');
+                });
+            });
+
+            initializeApp();
+        });
+
+        // Fallback initialization if DOMContentLoaded doesn't fire
+        if (document.readyState === 'loading') {
+            document.addEventListener('DOMContentLoaded', initializeApp);
+        } else {
+            initializeApp();
+        }
+
+        // Additional iframe compatibility checks
+        window.addEventListener('load', function() {
+            console.log('Window loaded');
+
+            // Verify all buttons are clickable
+            document.querySelectorAll('.post-button').forEach((button, index) => {
+                if (window.getComputedStyle(button).pointerEvents === 'none') {
+                    console.error(`Button ${index} has pointer-events: none`);
+                    button.style.pointerEvents = 'auto';
+                }
+            });
+
+            console.log('All systems ready for SharePoint iframe');
+        });
+
+        // Export functions for debugging
+        window.ParkingApp = {
+            postComment,
+            AppState,
+            StorageManager,
+            showDebugInfo
+        };
+    </script>
+</body>
+</html>
