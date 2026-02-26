@@ -1,0 +1,691 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Parking Availability Monitor</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%);
+            min-height: 100vh;
+            padding: 20px;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            background: white;
+            border-radius: 15px;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.1);
+            overflow: hidden;
+        }
+
+        .header {
+            padding: 30px;
+            text-align: center;
+            border-bottom: 3px solid #e9ecef;
+            transition: background-color 0.3s ease;
+        }
+
+        .header h1 {
+            font-size: 2.5rem;
+            color: #2c3e50;
+            margin-bottom: 10px;
+        }
+
+        .dynamic-status {
+            font-size: 1.2rem;
+            color: #34495e;
+            margin: 15px 0;
+            font-weight: 500;
+            line-height: 1.4;
+        }
+
+        .summary-info {
+            font-size: 0.9rem;
+            color: #6c757d;
+            margin-top: 10px;
+        }
+
+        .sections-container {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(350px, 1fr));
+            gap: 0;
+        }
+
+        .section {
+            padding: 30px;
+            border-right: 1px solid #e9ecef;
+            transition: background-color 0.3s ease;
+            min-height: 500px;
+        }
+
+        .section:last-child {
+            border-right: none;
+        }
+
+        .section-title {
+            font-size: 1.5rem;
+            font-weight: bold;
+            margin-bottom: 20px;
+            text-align: center;
+            color: #2c3e50;
+        }
+
+        .sentiment-display {
+            background: #f8f9fa;
+            padding: 15px;
+            border-radius: 10px;
+            margin-bottom: 20px;
+            text-align: center;
+        }
+
+        .sentiment-score {
+            font-size: 2rem;
+            font-weight: bold;
+            margin-bottom: 5px;
+        }
+
+        .sentiment-label {
+            font-size: 0.9rem;
+            color: #6c757d;
+        }
+
+        .comment-form {
+            margin-bottom: 25px;
+        }
+
+        .comment-input {
+            width: 100%;
+            padding: 15px;
+            border: 2px solid #e9ecef;
+            border-radius: 8px;
+            font-size: 1rem;
+            margin-bottom: 10px;
+            transition: border-color 0.3s ease;
+        }
+
+        .comment-input:focus {
+            outline: none;
+            border-color: #007bff;
+            box-shadow: 0 0 0 3px rgba(0, 123, 255, 0.1);
+        }
+
+        .submit-btn {
+            background: #007bff;
+            color: white;
+            border: none;
+            padding: 12px 25px;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 1rem;
+            transition: background-color 0.3s ease;
+            width: 100%;
+        }
+
+        .submit-btn:hover {
+            background: #0056b3;
+        }
+
+        .comments-list {
+            max-height: 300px;
+            overflow-y: auto;
+        }
+
+        .comment {
+            background: #f8f9fa;
+            padding: 15px;
+            border-radius: 8px;
+            margin-bottom: 10px;
+            border-left: 4px solid #dee2e6;
+            transition: all 0.3s ease;
+        }
+
+        .comment.positive {
+            border-left-color: #28a745;
+            background: #d4edda;
+        }
+
+        .comment.negative {
+            border-left-color: #dc3545;
+            background: #f8d7da;
+        }
+
+        .comment-text {
+            margin-bottom: 8px;
+            line-height: 1.4;
+        }
+
+        .comment-meta {
+            font-size: 0.8rem;
+            color: #6c757d;
+            display: flex;
+            justify-content: space-between;
+        }
+
+        .section.available {
+            background: linear-gradient(135deg, #d4edda 0%, #c3e6cb 100%);
+        }
+
+        .section.occupied {
+            background: linear-gradient(135deg, #f8d7da 0%, #f1c0c7 100%);
+        }
+
+        .section.neutral {
+            background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%);
+        }
+
+        /* Updated green colors */
+        .positive-score {
+            color: #28a745;
+        }
+
+        .negative-score {
+            color: #dc3545;
+        }
+
+        .neutral-score {
+            color: #6c757d;
+        }
+
+        @media (max-width: 768px) {
+            .sections-container {
+                grid-template-columns: 1fr;
+            }
+
+            .section {
+                border-right: none;
+                border-bottom: 1px solid #e9ecef;
+            }
+
+            .section:last-child {
+                border-bottom: none;
+            }
+
+            .header h1 {
+                font-size: 2rem;
+            }
+
+            .dynamic-status {
+                font-size: 1rem;
+            }
+        }
+
+        .fade-in {
+            animation: fadeIn 0.5s ease-in;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header" id="header">
+            <h1>Overall Parking Conditions</h1>
+            <div class="dynamic-status" id="dynamic-status">
+                Loading parking status...
+            </div>
+            <div class="summary-info" id="summary-info">
+                System starting up... | Comments auto-delete after 1 hour
+            </div>
+        </div>
+
+        <div class="sections-container">
+            <div class="section" id="section-omp-l1" data-section="omp-l1">
+                <h2 class="section-title">OMP L1</h2>
+                <div class="sentiment-display">
+                    <div class="sentiment-score neutral-score" id="score-omp-l1">0.0</div>
+                    <div class="sentiment-label">Sentiment Score</div>
+                </div>
+                <form class="comment-form" id="form-omp-l1">
+                    <input type="text" class="comment-input" placeholder="Report parking status for OMP L1..." maxlength="200">
+                    <button type="submit" class="submit-btn">Submit Report</button>
+                </form>
+                <div class="comments-list" id="comments-omp-l1"></div>
+            </div>
+
+            <div class="section" id="section-omp-l2" data-section="omp-l2">
+                <h2 class="section-title">OMP L2</h2>
+                <div class="sentiment-display">
+                    <div class="sentiment-score neutral-score" id="score-omp-l2">0.0</div>
+                    <div class="sentiment-label">Sentiment Score</div>
+                </div>
+                <form class="comment-form" id="form-omp-l2">
+                    <input type="text" class="comment-input" placeholder="Report parking status for OMP L2..." maxlength="200">
+                    <button type="submit" class="submit-btn">Submit Report</button>
+                </form>
+                <div class="comments-list" id="comments-omp-l2"></div>
+            </div>
+
+            <div class="section" id="section-omc" data-section="omc">
+                <h2 class="section-title">OMC</h2>
+                <div class="sentiment-display">
+                    <div class="sentiment-score neutral-score" id="score-omc">0.0</div>
+                    <div class="sentiment-label">Sentiment Score</div>
+                </div>
+                <form class="comment-form" id="form-omc">
+                    <input type="text" class="comment-input" placeholder="Report parking status for OMC..." maxlength="200">
+                    <button type="submit" class="submit-btn">Submit Report</button>
+                </form>
+                <div class="comments-list" id="comments-omc"></div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        class ParkingMonitor {
+            constructor() {
+                this.sections = ['omp-l1', 'omp-l2', 'omc'];
+                this.sectionNames = {
+                    'omp-l1': 'OMP L1',
+                    'omp-l2': 'OMP L2',
+                    'omc': 'OMC'
+                };
+                this.comments = this.loadComments();
+                this.setupEventListeners();
+                this.startUpdateLoop();
+                this.updateDisplay();
+            }
+
+            setupEventListeners() {
+                this.sections.forEach(section => {
+                    const form = document.getElementById(`form-${section}`);
+                    form.addEventListener('submit', (e) => this.handleSubmit(e, section));
+                });
+            }
+
+            handleSubmit(e, section) {
+                e.preventDefault();
+                const input = e.target.querySelector('.comment-input');
+                const text = input.value.trim();
+
+                if (text) {
+                    this.addComment(section, text);
+                    input.value = '';
+                }
+            }
+
+            addComment(section, text) {
+                const sentiment = this.analyzeSentiment(text);
+                const comment = {
+                    id: Date.now() + Math.random(),
+                    text: text,
+                    sentiment: sentiment,
+                    timestamp: new Date().toISOString(),
+                    section: section
+                };
+
+                if (!this.comments[section]) {
+                    this.comments[section] = [];
+                }
+
+                this.comments[section].unshift(comment);
+                this.saveComments();
+                this.updateDisplay();
+            }
+
+            analyzeSentiment(text) {
+                const lowerText = text.toLowerCase();
+
+                // Enhanced sentiment keywords
+                const positiveKeywords = [
+                    'available', 'free', 'empty', 'open', 'plenty', 'lots', 'space', 'spaces',
+                    'good', 'great', 'excellent', 'perfect', 'clear', 'found', 'easy',
+                    'parking', 'spot', 'spots', 'room', 'vacant', 'unused', 'accessible'
+                ];
+
+                const negativeKeywords = [
+                    'full', 'occupied', 'taken', 'busy', 'packed', 'crowded', 'none',
+                    'no space', 'no spaces', 'no parking', 'unavailable', 'closed',
+                    'difficult', 'hard', 'impossible', 'stuck', 'waiting', 'circling',
+                    'looking', 'searching', 'queue', 'line', 'blocked', 'reserved'
+                ];
+
+                let score = 0;
+                let matches = 0;
+
+                // Check for positive keywords
+                positiveKeywords.forEach(keyword => {
+                    if (lowerText.includes(keyword)) {
+                        score += 1;
+                        matches++;
+                    }
+                });
+
+                // Check for negative keywords
+                negativeKeywords.forEach(keyword => {
+                    if (lowerText.includes(keyword)) {
+                        score -= 1;
+                        matches++;
+                    }
+                });
+
+                // Apply multiplier for emphasis words
+                if (lowerText.includes('very') || lowerText.includes('really') ||
+                    lowerText.includes('extremely') || lowerText.includes('completely')) {
+                    score *= 1.5;
+                }
+
+                // Normalize score based on text length and matches
+                if (matches > 0) {
+                    score = score / Math.sqrt(matches);
+                }
+
+                return Math.max(-1, Math.min(1, score));
+            }
+
+            calculateSectionSentiment(section) {
+                const sectionComments = this.comments[section] || [];
+                const activeComments = sectionComments.filter(comment =>
+                    this.isCommentActive(comment.timestamp)
+                );
+
+                if (activeComments.length === 0) return 0;
+
+                const totalSentiment = activeComments.reduce((sum, comment) =>
+                    sum + comment.sentiment, 0);
+
+                return totalSentiment / activeComments.length;
+            }
+
+            isCommentActive(timestamp) {
+                const now = new Date();
+                const commentTime = new Date(timestamp);
+                const hoursPassed = (now - commentTime) / (1000 * 60 * 60);
+                return hoursPassed < 1;
+            }
+
+            getSectionStatus(section) {
+                const sentiment = this.calculateSectionSentiment(section);
+                const activeComments = (this.comments[section] || []).filter(comment =>
+                    this.isCommentActive(comment.timestamp)
+                );
+
+                if (activeComments.length === 0) {
+                    return { status: 'No recent updates', timestamp: null };
+                }
+
+                const mostRecent = activeComments[0];
+                const now = new Date();
+                const commentTime = new Date(mostRecent.timestamp);
+                const minutesAgo = Math.floor((now - commentTime) / (1000 * 60));
+
+                let timeText;
+                if (minutesAgo < 1) {
+                    timeText = 'just now';
+                } else if (minutesAgo < 60) {
+                    timeText = `${minutesAgo}m ago`;
+                } else {
+                    const hoursAgo = Math.floor(minutesAgo / 60);
+                    timeText = `${hoursAgo}h ago`;
+                }
+
+                let status;
+                if (sentiment > 0.1) {
+                    status = 'Available';
+                } else if (sentiment < -0.1) {
+                    status = 'Occupied';
+                } else {
+                    status = 'Mixed activity';
+                }
+
+                return { status, timestamp: timeText };
+            }
+
+            updateDynamicHeader() {
+                const statusTexts = this.sections.map(section => {
+                    const { status, timestamp } = this.getSectionStatus(section);
+                    const name = this.sectionNames[section];
+
+                    if (timestamp) {
+                        return `${name}: ${status} (${timestamp})`;
+                    } else {
+                        return `${name}: ${status}`;
+                    }
+                });
+
+                const statusText = statusTexts.join(' | ');
+
+                // Calculate summary
+                const availableCount = this.sections.filter(section => {
+                    const sentiment = this.calculateSectionSentiment(section);
+                    return sentiment > 0.1;
+                }).length;
+
+                const occupiedCount = this.sections.filter(section => {
+                    const sentiment = this.calculateSectionSentiment(section);
+                    return sentiment < -0.1;
+                }).length;
+
+                const noDataCount = this.sections.filter(section => {
+                    const activeComments = (this.comments[section] || []).filter(comment =>
+                        this.isCommentActive(comment.timestamp)
+                    );
+                    return activeComments.length === 0;
+                }).length;
+
+                let summary = '';
+                if (availableCount > 0 || occupiedCount > 0) {
+                    summary = `${availableCount} available, ${occupiedCount} occupied`;
+                    if (noDataCount > 0) {
+                        summary += `, ${noDataCount} no updates`;
+                    }
+                } else {
+                    summary = 'No recent activity';
+                }
+
+                const lastUpdate = this.getLastSystemUpdate();
+
+                document.getElementById('dynamic-status').textContent = statusText;
+                document.getElementById('summary-info').textContent =
+                    `${summary} | Last update: ${lastUpdate} | Comments auto-delete after 1 hour`;
+            }
+
+            getLastSystemUpdate() {
+                let mostRecent = null;
+
+                this.sections.forEach(section => {
+                    const activeComments = (this.comments[section] || []).filter(comment =>
+                        this.isCommentActive(comment.timestamp)
+                    );
+
+                    if (activeComments.length > 0) {
+                        const latest = new Date(activeComments[0].timestamp);
+                        if (!mostRecent || latest > mostRecent) {
+                            mostRecent = latest;
+                        }
+                    }
+                });
+
+                if (!mostRecent) return 'No recent activity';
+
+                const now = new Date();
+                const minutesAgo = Math.floor((now - mostRecent) / (1000 * 60));
+
+                if (minutesAgo < 1) {
+                    return 'just now';
+                } else if (minutesAgo < 60) {
+                    return `${minutesAgo}m ago`;
+                } else {
+                    const hoursAgo = Math.floor(minutesAgo / 60);
+                    return `${hoursAgo}h ago`;
+                }
+            }
+
+            updateDisplay() {
+                this.cleanupExpiredComments();
+                this.updateDynamicHeader();
+
+                this.sections.forEach(section => {
+                    this.updateSectionDisplay(section);
+                });
+
+                this.updateHeaderColor();
+            }
+
+            updateSectionDisplay(section) {
+                const sentiment = this.calculateSectionSentiment(section);
+                const scoreElement = document.getElementById(`score-${section}`);
+                const sectionElement = document.getElementById(`section-${section}`);
+                const commentsContainer = document.getElementById(`comments-${section}`);
+
+                // Update score display
+                scoreElement.textContent = sentiment.toFixed(1);
+                scoreElement.className = 'sentiment-score ' +
+                    (sentiment > 0.1 ? 'positive-score' :
+                     sentiment < -0.1 ? 'negative-score' : 'neutral-score');
+
+                // Update section background
+                sectionElement.className = 'section ' +
+                    (sentiment > 0.1 ? 'available' :
+                     sentiment < -0.1 ? 'occupied' : 'neutral');
+
+                // Update comments display
+                this.renderComments(section, commentsContainer);
+            }
+
+            renderComments(section, container) {
+                const sectionComments = (this.comments[section] || [])
+                    .filter(comment => this.isCommentActive(comment.timestamp))
+                    .slice(0, 10); // Limit to 10 most recent
+
+                container.innerHTML = '';
+
+                sectionComments.forEach(comment => {
+                    const commentElement = document.createElement('div');
+                    commentElement.className = 'comment fade-in ' +
+                        (comment.sentiment > 0.1 ? 'positive' :
+                         comment.sentiment < -0.1 ? 'negative' : '');
+
+                    const timeAgo = this.getTimeAgo(comment.timestamp);
+
+                    commentElement.innerHTML = `
+                        <div class="comment-text">${this.escapeHtml(comment.text)}</div>
+                        <div class="comment-meta">
+                            <span>Sentiment: ${comment.sentiment.toFixed(2)}</span>
+                            <span>${timeAgo}</span>
+                        </div>
+                    `;
+
+                    container.appendChild(commentElement);
+                });
+
+                if (sectionComments.length === 0) {
+                    container.innerHTML = '<div style="text-align: center; color: #6c757d; padding: 20px;">No recent comments</div>';
+                }
+            }
+
+            updateHeaderColor() {
+                const allSentiments = this.sections.map(section =>
+                    this.calculateSectionSentiment(section)
+                );
+
+                const avgSentiment = allSentiments.reduce((sum, s) => sum + s, 0) / allSentiments.length;
+
+                const header = document.getElementById('header');
+                let backgroundColor;
+
+                if (avgSentiment > 0.1) {
+                    backgroundColor = '#d4edda';
+                } else if (avgSentiment < -0.1) {
+                    backgroundColor = '#f8d7da';
+                } else {
+                    backgroundColor = '#f8f9fa';
+                }
+
+                header.style.background = `linear-gradient(135deg, ${backgroundColor} 0%, ${this.darkenColor(backgroundColor, 10)} 100%)`;
+            }
+
+            darkenColor(color, percent) {
+                const num = parseInt(color.replace("#", ""), 16);
+                const amt = Math.round(2.55 * percent);
+                const R = (num >> 16) - amt;
+                const G = (num >> 8 & 0x00FF) - amt;
+                const B = (num & 0x0000FF) - amt;
+                return "#" + (0x1000000 + (R < 255 ? R < 1 ? 0 : R : 255) * 0x10000 +
+                    (G < 255 ? G < 1 ? 0 : G : 255) * 0x100 +
+                    (B < 255 ? B < 1 ? 0 : B : 255)).toString(16).slice(1);
+            }
+
+            cleanupExpiredComments() {
+                let hasChanges = false;
+
+                this.sections.forEach(section => {
+                    if (this.comments[section]) {
+                        const originalLength = this.comments[section].length;
+                        this.comments[section] = this.comments[section].filter(comment =>
+                            this.isCommentActive(comment.timestamp)
+                        );
+
+                        if (this.comments[section].length !== originalLength) {
+                            hasChanges = true;
+                        }
+                    }
+                });
+
+                if (hasChanges) {
+                    this.saveComments();
+                }
+            }
+
+            getTimeAgo(timestamp) {
+                const now = new Date();
+                const commentTime = new Date(timestamp);
+                const diffInMinutes = Math.floor((now - commentTime) / (1000 * 60));
+
+                if (diffInMinutes < 1) return 'just now';
+                if (diffInMinutes < 60) return `${diffInMinutes}m ago`;
+
+                const diffInHours = Math.floor(diffInMinutes / 60);
+                return `${diffInHours}h ago`;
+            }
+
+            escapeHtml(text) {
+                const div = document.createElement('div');
+                div.textContent = text;
+                return div.innerHTML;
+            }
+
+            startUpdateLoop() {
+                // Update every second
+                setInterval(() => {
+                    this.updateDisplay();
+                }, 60000);
+            }
+
+            loadComments() {
+                try {
+                    const saved = localStorage.getItem('parkingComments');
+                    return saved ? JSON.parse(saved) : {};
+                } catch (e) {
+                    console.error('Error loading comments:', e);
+                    return {};
+                }
+            }
+
+            saveComments() {
+                try {
+                    localStorage.setItem('parkingComments', JSON.stringify(this.comments));
+                } catch (e) {
+                    console.error('Error saving comments:', e);
+                }
+            }
+        }
+
+        // Initialize the application when the page loads
+        document.addEventListener('DOMContentLoaded', () => {
+            new ParkingMonitor();
+        });
+    </script>
+</body>
+</html>
